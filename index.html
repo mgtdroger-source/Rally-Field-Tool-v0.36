@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Rally Field Tool v0.07</title>
+<style>
+:root{
+  --bg:#f3f6fa;
+  --card:#ffffff;
+  --ink:#132233;
+  --muted:#5c6b7a;
+  --line:#d5dee8;
+  --accent:#123b66;
+  --accent-soft:#e8f0f8;
+  --good:#1f7a35;
+  --warn:#c46a00;
+  --bad:#b42318;
+  --soft:#eef3f8;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+}
+.app{
+  max-width:560px;
+  margin:0 auto;
+  padding:14px;
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:14px;
+  margin-bottom:12px;
+  box-shadow:0 6px 18px rgba(0,0,0,.07);
+}
+h1{
+  margin:0 0 4px;
+  font-size:1.35rem;
+  color:var(--accent);
+}
+h2{
+  margin:0 0 10px;
+  font-size:1.05rem;
+  color:var(--accent);
+}
+.sub{
+  color:var(--muted);
+  font-size:.9rem;
+  line-height:1.35;
+}
+.small{
+  font-size:.82rem;
+  color:var(--muted);
+  line-height:1.35;
+}
+label.small{display:block;margin-top:2px}
+input,select,textarea{
+  width:100%;
+  border:1px solid #cbd7e4;
+  border-radius:10px;
+  padding:10px;
+  font-size:.95rem;
+  margin:4px 0 8px;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#fff;
+  color:var(--ink);
+}
+textarea{
+  min-height:76px;
+  resize:vertical;
+}
+button{
+  width:100%;
+  border:0;
+  border-radius:14px;
+  padding:14px;
+  margin-top:10px;
+  font-size:1rem;
+  font-weight:bold;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+button:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+.btn-primary{background:var(--accent);color:white}
+.btn-secondary{background:var(--soft);color:var(--accent);border:1px solid #cbd7e4}
+.btn-good{background:var(--good);color:white}
+.btn-bad{background:var(--bad);color:white}
+.row2{
+  display:grid;
+  grid-template-columns:1fr 110px;
+  gap:10px;
+}
+.mode-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+  margin-top:8px;
+}
+.mode-btn{
+  background:var(--soft);
+  color:var(--accent);
+  border:1px solid #cbd7e4;
+}
+.mode-btn.active{
+  background:var(--accent);
+  color:#fff;
+  border-color:var(--accent);
+}
+.status{
+  font-weight:bold;
+  font-size:.95rem;
+  margin-top:8px;
+}
+.status.good{color:var(--good)}
+.status.wait{color:var(--warn)}
+.status.bad{color:var(--bad)}
+.metric-card{
+  background:#f7fafc;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  margin-top:10px;
+}
+.metric{
+  display:grid;
+  grid-template-columns:130px 1fr;
+  gap:8px;
+  padding:8px 0;
+  border-top:1px solid #e6edf4;
+  align-items:center;
+}
+.metric:first-child{border-top:0}
+.metric-label{
+  color:var(--muted);
+  font-size:.85rem;
+}
+.metric-value{
+  font-family:"Courier New",monospace;
+  font-weight:bold;
+  font-size:1rem;
+  overflow-wrap:anywhere;
+}
+.captured-point-value{
+  font-weight:900;
+  font-size:1.12rem;
+  color:var(--ink);
+}
+.neutral-prompt{
+  color:var(--muted);
+  font-size:.9rem;
+  line-height:1.35;
+  margin-top:10px;
+}
+.panel{display:none}
+.panel.active{display:block}
+.capture-area{display:none}
+.capture-area.active{display:block}
+.notice{
+  background:var(--accent-soft);
+  border:1px solid #c7d9ea;
+  border-radius:14px;
+  padding:12px;
+  margin-top:10px;
+  color:var(--accent);
+  font-size:.9rem;
+  line-height:1.35;
+}
+.warnbox{
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  border-radius:14px;
+  padding:12px;
+  margin-top:10px;
+  color:#9a3412;
+  font-size:.9rem;
+  line-height:1.35;
+}
+.saved-item{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+  margin-top:8px;
+  background:#fbfdff;
+  font-size:.9rem;
+}
+.saved-title{
+  font-weight:bold;
+  color:var(--accent);
+}
+.saved-meta{
+  color:var(--muted);
+  font-size:.82rem;
+  margin-top:3px;
+  line-height:1.35;
+}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="card">
+    <h1>Rally Field Tool v0.07</h1>
+    <div class="sub">Field capture shell for rally GPS waypoint/control information, trip-line testing and GPS trip use. This build removes the extra GPS warm-up timer and starts GPS in the background.</div>
+  </div>
+
+  <div class="card">
+    <h2>1. Rally Details</h2>
+    <div class="sub">Enter the rally/project details for this field session.</div>
+    <label class="small" for="rallyTitle">Rally title</label>
+    <input id="rallyTitle" placeholder="Example: Cape 1000">
+
+    <div class="row2">
+      <div>
+        <label class="small" for="routeName">Route / section</label>
+        <input id="routeName" placeholder="Example: Day 1 Section A">
+      </div>
+      <div>
+        <label class="small" for="rallyDay">Day</label>
+        <select id="rallyDay">
+          <option>Day 1</option><option>Day 2</option><option>Day 3</option>
+          <option>Day 4</option><option>Day 5</option><option>Day 6</option><option>Day 7</option>
+        </select>
+      </div>
+    </div>
+
+    <label class="small" for="projectNotes">Project notes</label>
+    <textarea id="projectNotes" placeholder="Optional notes for this field session"></textarea>
+  </div>
+
+  <div class="card">
+    <h2>2. Mode</h2>
+    <div class="sub">Select the field task. Gather Data starts GPS and capture preparation.</div>
+    <div class="mode-grid">
+      <button class="mode-btn" id="modeGatherBtn">Gather Data</button>
+      <button class="mode-btn" id="modeTestBtn">Test Data</button>
+      <button class="mode-btn" id="modeTripBtn">GPS Trip</button>
+    </div>
+  </div>
+
+  <div class="panel" id="gatherPanel">
+    <div class="card">
+      <h2>Gather Data</h2>
+      <div class="sub">Use this mode to capture waypoint or control reference positions in the field. GPS starts quietly in the background; New Capture opens immediately.</div>
+<div class="neutral-prompt" id="gatherStatus">Select New Capture to begin.</div>
+      <button class="btn-primary" id="newCaptureBtn">New Capture</button>
+    </div>
+
+    <div class="capture-area" id="captureArea">
+      <div class="card">
+        <h2>New Capture Details</h2>
+        <div class="sub">Name the location before capture so the saved point is clear later.</div>
+
+        <div class="row2">
+          <div>
+            <label class="small" for="locType">Location type</label>
+            <select id="locType">
+              <option>STC</option>
+              <option>Marshal</option>
+              <option>Open Control</option>
+              <option>Waypoint</option>
+            </select>
+          </div>
+          <div>
+            <label class="small" for="locNumber">No.</label>
+            <select id="locNumber"></select>
+          </div>
+        </div>
+
+        <div class="small" id="locTypeNote">Capture can be saved as point only, or point plus trip line.</div>
+
+        <label class="small" for="locName">Location name</label>
+        <input id="locName" value="STC 1">
+
+        <label class="small" for="locNotes">Notes</label>
+        <textarea id="locNotes" placeholder="Example: Ruby Way near 90 sign, approach from north"></textarea>
+      </div>
+
+      <div class="card">
+        <h2>Capture Location</h2>
+        <div class="sub">Set the phone down, press Capture Location, allow the capture settle period, then the app records 20 good GPS reads. Poor reads are rejected. If the capture is struggling with bad reads, press the capture button again to stop. The button returns to ready; press it again to start over.</div>
+
+        <button class="btn-primary" id="capturePointBtn" disabled>Waiting for GPS</button>
+        <div class="status wait" id="captureStatus">Waiting for GPS fix</div>
+
+        <div class="metric-card">
+          <div class="metric">
+            <div class="metric-label">Samples</div>
+            <div class="metric-value" id="pointSamples">0 / 20</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Rejected Reads</div>
+            <div class="metric-value" id="pointRejected">0</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Captured Point</div>
+            <div class="metric-value captured-point-value" id="pointLatLon">--</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Capture Quality</div>
+            <div class="metric-value" id="captureQuality">--</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Live Accuracy</div>
+            <div class="metric-value" id="liveAccuracy">--</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Live Lat/Lon</div>
+            <div class="metric-value" id="liveLatLon">--</div>
+          </div>
+        </div>
+
+        <div class="warnbox hidden" id="qualityWarning">Capture Quality: Repeat Recommended — possible movement or unstable GPS during capture.</div>
+      </div>
+
+      <div class="card" id="walkCard">
+        <h2>Walk / Drive Trip Line</h2>
+        <div class="sub">Optional. After the point is captured, walk or drive along the road. The app uses the road bearing to create a 100 m trip line centred on the captured point.</div>
+
+        <button class="btn-primary" id="startWalkBtn" disabled>Walk / Drive Trip Line</button>
+        <button class="btn-secondary" id="stopWalkBtn" disabled>Stop Walk / Drive</button>
+        <div class="status wait" id="walkStatus">Capture point first. Line data can be added now or later.</div>
+
+        <div class="metric-card">
+          <div class="metric">
+            <div class="metric-label">Walk Status</div>
+            <div class="metric-value" id="walkState">Not started</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Settle Timer</div>
+            <div class="metric-value" id="walkSettleTimer">--</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Track Points</div>
+            <div class="metric-value" id="walkPoints">0</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Track Length</div>
+            <div class="metric-value" id="walkTrackLength">--</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Trip Line Length</div>
+            <div class="metric-value" id="tripLineLength">--</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Line Start</div>
+            <div class="metric-value" id="lineStart">--</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Line End</div>
+            <div class="metric-value" id="lineEnd">--</div>
+          </div>
+        </div>
+      </div>
+<div class="card">
+        <h2>Save Data</h2>
+        <div class="sub">Save Data confirms this capture as a completed item. Local storage is used as a safety net while working.</div>
+        <div class="status wait" id="saveStatus">Capture point before saving.</div>
+        <button class="btn-good" id="saveDataBtn" disabled>Save Data</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Saved Captures</h2>
+      <div class="sub">Confirmed captures saved in this browser.</div>
+      <div id="savedList"><div class="small">No saved captures yet.</div></div>
+      <button class="btn-secondary" id="exportJsonBtn">Export JSON</button>
+      <button class="btn-bad" id="clearSavedBtn">Clear Saved Captures</button>
+    </div>
+  </div>
+
+  <div class="panel" id="testPanel">
+    <div class="card">
+      <h2>Test Data</h2>
+      <div class="sub">Placeholder for later trip-line / waypoint test functions. No test engine is included in this bake.</div>
+    </div>
+  </div>
+
+  <div class="panel" id="tripPanel">
+    <div class="card">
+      <h2>GPS Trip</h2>
+      <div class="sub">Placeholder for the later GPS trip meter. No trip engine is included in this bake.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const APP_VERSION="0.07";
+const STORE_KEY="rallyFieldTool_v007";
+const CAPTURE_SETTLE_MS=60000;
+const WALK_SETTLE_MS=30000;
+const CAPTURE_SAMPLES=20;
+const GOOD_ACCURACY_MAX=4.5;
+const TRIP_LINE_HALF_LENGTH_M=50;
+
+let state={
+  rallyTitle:"",
+  routeName:"",
+  rallyDay:"Day 1",
+  projectNotes:"",
+  savedCaptures:[]
+};
+
+let activeMode=null;
+let appGpsWatchId=null;
+let appGpsStartedAt=0;
+let appGpsTimerId=null;
+let lastLiveFix=null;
+
+let captureWatchId=null;
+let captureStartedAt=0;
+let captureSettled=false;
+let captureSamples=[];
+let captureRejected=0;
+let capturedPoint=null;
+let lastCaptureDiagnostics=null;
+
+let walkWatchId=null;
+let walkStartedAt=0;
+let walkSettled=false;
+let walkTrack=[];
+let walkRejected=0;
+let lineStartPoint=null;
+let lineEndPoint=null;
+let roadBearingDeg=null;
+let timingLineBearingDeg=null;
+
+const $=id=>document.getElementById(id);
+
+function init(){
+  populateNumbers();
+  loadLocal();
+  bindEvents();
+  syncFieldsFromState();
+  updateLocationName();
+  updateTypeNote();
+  updateGpsDisplay();
+  updateCaptureButton();
+  updateWalkDisplay();
+  updateSaveState();
+  renderSavedList();
+  startAppGps();
+}
+
+function populateNumbers(){
+  const sel=$("locNumber");
+  for(let i=1;i<=50;i++){
+    const o=document.createElement("option");
+    o.value=String(i);
+    o.textContent=String(i);
+    sel.appendChild(o);
+  }
+}
+
+function bindEvents(){
+  $("modeGatherBtn").addEventListener("click",()=>selectMode("gather"));
+  $("modeTestBtn").addEventListener("click",()=>selectMode("test"));
+  $("modeTripBtn").addEventListener("click",()=>selectMode("trip"));
+  $("newCaptureBtn").addEventListener("click",startNewCapture);
+  $("locType").addEventListener("change",()=>{updateLocationName(true);updateTypeNote();updateSaveState();});
+  $("locNumber").addEventListener("change",()=>{updateLocationName(true);updateSaveState();});
+  $("locName").addEventListener("input",()=>{$("locName").dataset.manual="1";updateSaveState();autoSaveDraft();});
+  $("locNotes").addEventListener("input",autoSaveDraft);
+  $("capturePointBtn").addEventListener("click",()=>{ if(captureWatchId){stopCapturePoint();}else{startCapturePoint();} });
+  $("startWalkBtn").addEventListener("click",startWalkDrive);
+  $("stopWalkBtn").addEventListener("click",stopWalkDrive);
+  $("saveDataBtn").addEventListener("click",saveData);
+  $("exportJsonBtn").addEventListener("click",exportJson);
+  $("clearSavedBtn").addEventListener("click",clearSaved);
+
+  ["rallyTitle","routeName","rallyDay","projectNotes"].forEach(id=>{
+    $(id).addEventListener("input",()=>{
+      state[id]=$(id).value;
+      saveLocal();
+    });
+  });
+}
+
+function selectMode(mode){
+  activeMode=mode;
+  ["Gather","Test","Trip"].forEach(name=>{
+    const lower=name.toLowerCase();
+    $("mode"+name+"Btn").classList.toggle("active",lower===mode);
+  });
+  $("gatherPanel").classList.toggle("active",mode==="gather");
+  $("testPanel").classList.toggle("active",mode==="test");
+  $("tripPanel").classList.toggle("active",mode==="trip");
+  if(mode==="gather") startAppGps();
+}
+
+function startAppGps(){
+  if(!appGpsStartedAt) appGpsStartedAt=Date.now();
+
+  if(!navigator.geolocation){
+    $("gatherStatus").textContent="GPS not supported on this device/browser.";
+    updateCaptureButton();
+    return;
+  }
+
+  if(appGpsWatchId!==null) return;
+
+  $("gatherStatus").textContent="Select New Capture to begin.";
+
+  appGpsWatchId=navigator.geolocation.watchPosition(pos=>{
+    lastLiveFix={
+      lat:pos.coords.latitude,
+      lon:pos.coords.longitude,
+      accuracy:pos.coords.accuracy,
+      speed:pos.coords.speed,
+      time:pos.timestamp || Date.now()
+    };
+    updateGpsDisplay();
+    updateCaptureButton();
+    updateWalkDisplay();
+  },err=>{
+    $("gatherStatus").textContent="GPS error: "+err.message;
+    updateCaptureButton();
+  },{enableHighAccuracy:true,maximumAge:0,timeout:15000});
+
+  if(appGpsTimerId) clearInterval(appGpsTimerId);
+  appGpsTimerId=setInterval(()=>{
+    updateGpsDisplay();
+    updateCaptureButton();
+    updateWalkDisplay();
+  },250);
+}
+
+function updateGpsDisplay(){
+  $("liveAccuracy").textContent=lastLiveFix && Number.isFinite(lastLiveFix.accuracy) ? Number(lastLiveFix.accuracy).toFixed(1)+" m" : "--";
+  $("liveLatLon").textContent=lastLiveFix ? lastLiveFix.lat.toFixed(6)+", "+lastLiveFix.lon.toFixed(6) : "--";
+}
+function updateCaptureButton(){
+  const btn=$("capturePointBtn");
+  if(captureWatchId){
+    btn.disabled=false;
+    btn.className="btn-bad";
+    if(!captureSettled){
+      const left=Math.max(0,Math.ceil((CAPTURE_SETTLE_MS-(Date.now()-captureStartedAt))/1000));
+      btn.textContent="Stop Capture — Settling "+left;
+      $("captureStatus").textContent="Settling capture. Press button again to stop.";
+      $("captureStatus").className="status wait";
+    }else{
+      btn.textContent="Stop Capture — Capturing "+Math.min(captureSamples.length,CAPTURE_SAMPLES)+"/"+CAPTURE_SAMPLES;
+      $("captureStatus").textContent="Capturing location samples. Press button again to stop.";
+      $("captureStatus").className="status wait";
+    }
+    return;
+  }
+
+  btn.className="btn-primary";
+
+  if(!lastLiveFix){
+    btn.disabled=true;
+    btn.textContent="Waiting for GPS";
+    $("captureStatus").textContent="Waiting for GPS fix";
+    $("captureStatus").className="status wait";
+    return;
+  }
+
+  btn.disabled=false;
+  btn.textContent="Capture Location";
+  if(!capturedPoint){
+    $("captureStatus").textContent="Ready to capture";
+    $("captureStatus").className="status good";
+  }
+}
+function startNewCapture(){
+  stopWalkDrive(false);
+  $("captureArea").classList.add("active");
+  capturedPoint=null;
+  lastCaptureDiagnostics=null;
+  captureSamples=[];
+  captureRejected=0;
+  walkTrack=[];
+  walkRejected=0;
+  lineStartPoint=null;
+  lineEndPoint=null;
+  roadBearingDeg=null;
+  timingLineBearingDeg=null;
+
+  $("pointSamples").textContent="0 / "+CAPTURE_SAMPLES;
+  $("pointRejected").textContent="0";
+  $("pointLatLon").textContent="--";
+  $("captureQuality").textContent="--";
+  $("captureQuality").style.color="";
+  $("qualityWarning").classList.add("hidden");
+
+  updateLocationName();
+  updateTypeNote();
+  updateCaptureButton();
+  updateWalkDisplay();
+  updateSaveState();
+  autoSaveDraft();
+  $("gatherStatus").textContent="Capture details opened.";
+  $("captureArea").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function updateLocationName(force){
+  const type=$("locType").value;
+  const no=$("locNumber").value || "1";
+  if(force || $("locName").dataset.manual!=="1"){
+    $("locName").value=type+" "+no;
+    $("locName").dataset.manual="0";
+  }
+}
+
+function updateTypeNote(){
+  const type=$("locType").value;
+  if(type==="Waypoint"){
+    $("locTypeNote").textContent="Waypoint can be saved as point only. Trip line is optional.";
+  }else{
+    $("locTypeNote").textContent="Control can be saved as point only, or point plus trip line.";
+  }
+}
+
+function startCapturePoint(){
+  if(!navigator.geolocation){
+    alert("GPS not supported on this device/browser.");
+    return;
+  }
+  if(!lastLiveFix){
+    alert("Waiting for live GPS fix.");
+    return;
+  }
+
+  if(captureWatchId!==null) navigator.geolocation.clearWatch(captureWatchId);
+
+  capturedPoint=null;
+  lastCaptureDiagnostics=null;
+  captureSamples=[];
+  captureRejected=0;
+  lineStartPoint=null;
+  lineEndPoint=null;
+  roadBearingDeg=null;
+  timingLineBearingDeg=null;
+  walkTrack=[];
+  walkRejected=0;
+
+  captureStartedAt=Date.now();
+  captureSettled=false;
+
+  $("pointSamples").textContent="0 / "+CAPTURE_SAMPLES;
+  $("pointRejected").textContent="0";
+  $("pointLatLon").textContent="--";
+  $("captureQuality").textContent="--";
+  $("captureQuality").style.color="";
+  $("qualityWarning").classList.add("hidden");
+  updateWalkDisplay();
+  updateSaveState();
+
+  captureWatchId=navigator.geolocation.watchPosition(pos=>{
+    const p={
+      lat:pos.coords.latitude,
+      lon:pos.coords.longitude,
+      accuracy:pos.coords.accuracy,
+      time:pos.timestamp || Date.now()
+    };
+    lastLiveFix=p;
+
+    if(!captureSettled && Date.now()-captureStartedAt>=CAPTURE_SETTLE_MS){
+      captureSettled=true;
+    }
+
+    if(captureSettled){
+      if(Number.isFinite(p.accuracy) && p.accuracy<=GOOD_ACCURACY_MAX){
+        captureSamples.push(p);
+      }else{
+        captureRejected++;
+      }
+    }
+
+    $("pointSamples").textContent=Math.min(captureSamples.length,CAPTURE_SAMPLES)+" / "+CAPTURE_SAMPLES;
+    $("pointRejected").textContent=String(captureRejected);
+    updateGpsDisplay();
+    updateCaptureButton();
+
+    if(captureSamples.length>=CAPTURE_SAMPLES){
+      navigator.geolocation.clearWatch(captureWatchId);
+      captureWatchId=null;
+      capturedPoint=averageSamples(captureSamples);
+      lastCaptureDiagnostics=capturedPoint;
+      finishCapture();
+    }
+  },err=>{
+    captureWatchId=null;
+    $("captureStatus").textContent="GPS error: "+err.message;
+    $("captureStatus").className="status bad";
+    updateCaptureButton();
+  },{enableHighAccuracy:true,maximumAge:0,timeout:5000});
+}
+
+function stopCapturePoint(){
+  if(captureWatchId!==null){
+    navigator.geolocation.clearWatch(captureWatchId);
+    captureWatchId=null;
+  }
+  captureSettled=false;
+  $("capturePointBtn").className="btn-primary";
+  updateCaptureButton();
+  $("captureStatus").textContent="Capture stopped. Ready to try again.";
+  $("captureStatus").className="status wait";
+  updateSaveState();
+}
+
+function finishCapture(){
+  const quality=getCaptureQuality(capturedPoint,captureRejected);
+  $("pointSamples").textContent=CAPTURE_SAMPLES+" / "+CAPTURE_SAMPLES;
+  $("pointRejected").textContent=String(captureRejected);
+  $("pointLatLon").textContent=capturedPoint.lat.toFixed(6)+", "+capturedPoint.lon.toFixed(6);
+  $("captureQuality").textContent=quality.label;
+  $("captureQuality").style.color=quality.color;
+  $("captureStatus").textContent="Capture complete";
+  $("captureStatus").className="status good";
+  $("qualityWarning").classList.toggle("hidden",!quality.warn);
+  $("capturePointBtn").className="btn-primary";
+  beep();
+  updateCaptureButton();
+  updateWalkDisplay();
+  updateSaveState();
+  autoSaveDraft();
+}
+
+function startWalkDrive(){
+  if(!capturedPoint){
+    alert("Capture the location point first.");
+    return;
+  }
+  if(!navigator.geolocation){
+    alert("GPS not supported on this device/browser.");
+    return;
+  }
+
+  if(walkWatchId!==null) navigator.geolocation.clearWatch(walkWatchId);
+
+  lineStartPoint=null;
+  lineEndPoint=null;
+  roadBearingDeg=null;
+  timingLineBearingDeg=null;
+  walkTrack=[];
+  walkRejected=0;
+  walkStartedAt=Date.now();
+  walkSettled=false;
+
+  updateWalkDisplay();
+
+  walkWatchId=navigator.geolocation.watchPosition(pos=>{
+    const p={
+      lat:pos.coords.latitude,
+      lon:pos.coords.longitude,
+      accuracy:pos.coords.accuracy,
+      speed:pos.coords.speed,
+      time:pos.timestamp || Date.now()
+    };
+    lastLiveFix=p;
+
+    if(!walkSettled && Date.now()-walkStartedAt>=WALK_SETTLE_MS){
+      walkSettled=true;
+    }
+
+    if(walkSettled){
+      if(!Number.isFinite(p.accuracy) || p.accuracy<=30){
+        walkTrack.push(p);
+      }else{
+        walkRejected++;
+      }
+    }
+
+    updateGpsDisplay();
+    updateWalkDisplay();
+  },err=>{
+    $("walkStatus").textContent="GPS error: "+err.message;
+    $("walkStatus").className="status bad";
+    updateWalkDisplay();
+  },{enableHighAccuracy:true,maximumAge:0,timeout:5000});
+}
+
+function stopWalkDrive(showAlerts=true){
+  if(walkWatchId!==null){
+    navigator.geolocation.clearWatch(walkWatchId);
+    walkWatchId=null;
+  }
+
+  if(!showAlerts){
+    updateWalkDisplay();
+    return;
+  }
+
+  if(walkTrack.length<2){
+    $("walkStatus").textContent="Not enough walk/drive points. Try again.";
+    $("walkStatus").className="status bad";
+    updateWalkDisplay();
+    return;
+  }
+
+  const first=walkTrack[0];
+  const last=walkTrack[walkTrack.length-1];
+  const trackLen=totalTrackLength(walkTrack);
+
+  if(trackLen<5){
+    $("walkStatus").textContent="Walk/drive track too short. Try a longer road movement.";
+    $("walkStatus").className="status bad";
+    updateWalkDisplay();
+    return;
+  }
+
+  roadBearingDeg=bearingBetween(first,last);
+  timingLineBearingDeg=normalizeBearing(roadBearingDeg+90);
+  lineStartPoint=pointFromBearing(capturedPoint,timingLineBearingDeg,-TRIP_LINE_HALF_LENGTH_M);
+  lineEndPoint=pointFromBearing(capturedPoint,timingLineBearingDeg,TRIP_LINE_HALF_LENGTH_M);
+
+  $("walkStatus").textContent="Trip line ready";
+  $("walkStatus").className="status good";
+  updateWalkDisplay();
+  updateSaveState();
+  autoSaveDraft();
+  beep();
+}
+
+function updateWalkDisplay(){
+  const running=walkWatchId!==null;
+  $("startWalkBtn").disabled=!capturedPoint || running;
+  $("stopWalkBtn").disabled=!running;
+
+  if(!capturedPoint){
+    $("walkStatus").textContent="Capture point first. Line data can be added now or later.";
+    $("walkStatus").className="status wait";
+    $("walkState").textContent="Not started";
+  }else if(running && !walkSettled){
+    const left=Math.max(0,Math.ceil((WALK_SETTLE_MS-(Date.now()-walkStartedAt))/1000));
+    $("walkState").textContent="Settling";
+    $("walkSettleTimer").textContent=left+" sec";
+    $("walkStatus").textContent="Walk/Drive GPS settling. Start moving after countdown.";
+    $("walkStatus").className="status wait";
+  }else if(running && walkSettled){
+    $("walkState").textContent="Recording";
+    $("walkSettleTimer").textContent="recording";
+    $("walkStatus").textContent="Recording road movement. Press Stop Walk / Drive when done.";
+    $("walkStatus").className="status good";
+  }else if(lineStartPoint && lineEndPoint){
+    $("walkState").textContent="Line ready";
+    $("walkSettleTimer").textContent="complete";
+  }else if(capturedPoint){
+    $("walkState").textContent="Ready";
+    $("walkSettleTimer").textContent="--";
+  }
+
+  $("walkPoints").textContent=String(walkTrack.length);
+  $("walkTrackLength").textContent=walkTrack.length>=2 ? totalTrackLength(walkTrack).toFixed(1)+" m" : "--";
+  $("tripLineLength").textContent=lineStartPoint && lineEndPoint ? haversineMeters(lineStartPoint,lineEndPoint).toFixed(1)+" m" : "--";
+  $("lineStart").textContent=lineStartPoint ? lineStartPoint.lat.toFixed(6)+", "+lineStartPoint.lon.toFixed(6) : "--";
+  $("lineEnd").textContent=lineEndPoint ? lineEndPoint.lat.toFixed(6)+", "+lineEndPoint.lon.toFixed(6) : "--";
+}
+
+function updateSaveState(){
+  const btn=$("saveDataBtn");
+  if(!capturedPoint){
+    btn.disabled=true;
+    $("saveStatus").textContent="Capture point before saving.";
+    $("saveStatus").className="status wait";
+    btn.textContent="Save Data";
+    return;
+  }
+
+  const hasLine=!!(lineStartPoint && lineEndPoint);
+  btn.disabled=false;
+  btn.textContent=hasLine ? "Save Point + Trip Line" : "Save Point Only";
+  $("saveStatus").textContent=hasLine ? "Ready to save point plus trip line." : "Ready to save point only. Trip line can be added later if needed.";
+  $("saveStatus").className=hasLine ? "status good" : "status wait";
+}
+
+function saveData(){
+  if(!capturedPoint){
+    alert("Capture point before saving.");
+    return;
+  }
+
+  const item={
+    id:"cap_"+Date.now()+"_"+Math.random().toString(16).slice(2),
+    app:"Rally Field Tool",
+    version:APP_VERSION,
+    savedAt:new Date().toISOString(),
+    rallyTitle:$("rallyTitle").value.trim(),
+    routeName:$("routeName").value.trim(),
+    day:$("rallyDay").value,
+    type:$("locType").value,
+    number:$("locNumber").value,
+    name:$("locName").value.trim() || ($("locType").value+" "+$("locNumber").value),
+    notes:$("locNotes").value.trim(),
+    point:{
+      lat:capturedPoint.lat,
+      lon:capturedPoint.lon,
+      accuracy:capturedPoint.accuracy,
+      samples:capturedPoint.samples
+    },
+    quality:getCaptureQuality(capturedPoint,captureRejected).label,
+    diagnostics:{
+      meanSpread:capturedPoint.meanSpread,
+      maxSpread:capturedPoint.maxSpread,
+      firstLastDrift:capturedPoint.firstLastDrift,
+      minAccuracy:capturedPoint.minAccuracy,
+      maxAccuracy:capturedPoint.maxAccuracy,
+      rejectedReads:captureRejected
+    },
+    line:null,
+    status:"Point only"
+  };
+
+  if(lineStartPoint && lineEndPoint){
+    item.line={
+      lengthMeters:haversineMeters(lineStartPoint,lineEndPoint),
+      start:{lat:lineStartPoint.lat,lon:lineStartPoint.lon},
+      end:{lat:lineEndPoint.lat,lon:lineEndPoint.lon},
+      roadBearing:roadBearingDeg,
+      timingLineBearing:timingLineBearingDeg,
+      source:"Walk / drive"
+    };
+    item.status="Point + trip line";
+  }
+
+  state.rallyTitle=$("rallyTitle").value;
+  state.routeName=$("routeName").value;
+  state.rallyDay=$("rallyDay").value;
+  state.projectNotes=$("projectNotes").value;
+  state.savedCaptures.push(item);
+  saveLocal();
+  renderSavedList();
+
+  $("saveStatus").textContent="Saved: "+item.status;
+  $("saveStatus").className="status good";
+  beep();
+}
+
+function renderSavedList(){
+  const wrap=$("savedList");
+  if(!state.savedCaptures.length){
+    wrap.innerHTML='<div class="small">No saved captures yet.</div>';
+    return;
+  }
+
+  wrap.innerHTML="";
+  state.savedCaptures.slice().reverse().forEach(item=>{
+    const div=document.createElement("div");
+    div.className="saved-item";
+    const line=item.line ? "Point + trip line" : "Point only";
+    div.innerHTML=
+      '<div class="saved-title">'+escapeHtml(item.name || "Unnamed")+'</div>'+
+      '<div class="saved-meta">'+escapeHtml(item.type || "")+' '+escapeHtml(item.number || "")+' | '+line+'</div>'+
+      '<div class="saved-meta">'+Number(item.point.lat).toFixed(6)+', '+Number(item.point.lon).toFixed(6)+'</div>';
+    wrap.appendChild(div);
+  });
+}
+
+function clearSaved(){
+  if(!confirm("Clear all saved captures from this browser?")) return;
+  state.savedCaptures=[];
+  saveLocal();
+  renderSavedList();
+}
+
+function exportJson(){
+  const data={
+    app:"Rally Field Tool",
+    version:APP_VERSION,
+    exportedAt:new Date().toISOString(),
+    rallyTitle:$("rallyTitle").value.trim(),
+    routeName:$("routeName").value.trim(),
+    day:$("rallyDay").value,
+    notes:$("projectNotes").value.trim(),
+    captures:state.savedCaptures
+  };
+  const nameParts=[
+    sanitizeFilePart(data.rallyTitle||"rally"),
+    sanitizeFilePart(data.day||"day"),
+    "field_data_v007.json"
+  ].filter(Boolean);
+  downloadTextFile(nameParts.join("_"),JSON.stringify(data,null,2),"application/json");
+}
+
+function averageSamples(samples){
+  let weightedLat=0,weightedLon=0,weightSum=0,accSum=0,minAcc=Infinity,maxAcc=-Infinity;
+  samples.forEach(s=>{
+    const acc=Math.max(1,Number(s.accuracy||20));
+    const weight=1/(acc*acc);
+    weightedLat+=s.lat*weight;
+    weightedLon+=s.lon*weight;
+    weightSum+=weight;
+    accSum+=acc;
+    minAcc=Math.min(minAcc,acc);
+    maxAcc=Math.max(maxAcc,acc);
+  });
+
+  const avg={
+    lat:weightedLat/weightSum,
+    lon:weightedLon/weightSum,
+    accuracy:accSum/samples.length,
+    minAccuracy:minAcc,
+    maxAccuracy:maxAcc,
+    samples:samples.length
+  };
+
+  let spreadSum=0,maxSpread=0;
+  samples.forEach(s=>{
+    s.distanceFromAverage=haversineMeters(s,avg);
+    spreadSum+=s.distanceFromAverage;
+    maxSpread=Math.max(maxSpread,s.distanceFromAverage);
+  });
+
+  avg.meanSpread=spreadSum/samples.length;
+  avg.maxSpread=maxSpread;
+  avg.firstLastDrift=haversineMeters(samples[0],samples[samples.length-1]);
+  avg.captureDurationMs=samples[samples.length-1].time-samples[0].time;
+  return avg;
+}
+
+function getCaptureQuality(p,rejected){
+  if(!p) return {label:"--",color:"",warn:false};
+
+  const spread=Number(p.meanSpread||0);
+  const drift=Number(p.firstLastDrift||0);
+  const rej=Number(rejected||0);
+
+  if(spread>0.40 || drift>1.50){
+    return {label:"Poor — repeat capture",color:"var(--bad)",warn:true};
+  }
+  if(spread>=0.20 || drift>=0.75 || rej>20){
+    return {label:"Repeat Recommended",color:"var(--warn)",warn:true};
+  }
+  if(rej===0 && spread<0.10 && drift<0.25){
+    return {label:"Excellent",color:"var(--good)",warn:false};
+  }
+  if(spread<0.20 && drift<0.75){
+    return {label:"Good",color:"var(--good)",warn:false};
+  }
+  return {label:"Repeat Recommended",color:"var(--warn)",warn:true};
+}
+
+function haversineMeters(a,b){
+  const R=6371000;
+  const lat1=a.lat*Math.PI/180;
+  const lat2=b.lat*Math.PI/180;
+  const dLat=(b.lat-a.lat)*Math.PI/180;
+  const dLon=(b.lon-a.lon)*Math.PI/180;
+  const x=dLon*Math.cos((lat1+lat2)/2);
+  const y=dLat;
+  return Math.sqrt(x*x+y*y)*R;
+}
+
+function totalTrackLength(points){
+  let t=0;
+  for(let i=1;i<points.length;i++) t+=haversineMeters(points[i-1],points[i]);
+  return t;
+}
+
+function normalizeBearing(deg){
+  return ((deg%360)+360)%360;
+}
+
+function bearingBetween(a,b){
+  const lat1=a.lat*Math.PI/180;
+  const lat2=b.lat*Math.PI/180;
+  const dLon=(b.lon-a.lon)*Math.PI/180;
+  const y=Math.sin(dLon)*Math.cos(lat2);
+  const x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+  return normalizeBearing(Math.atan2(y,x)*180/Math.PI);
+}
+
+function pointFromBearing(o,bearingDeg,distanceM){
+  const R=6371000;
+  const brng=bearingDeg*Math.PI/180;
+  const lat1=o.lat*Math.PI/180;
+  const lon1=o.lon*Math.PI/180;
+  const d=distanceM/R;
+  const lat2=Math.asin(Math.sin(lat1)*Math.cos(d)+Math.cos(lat1)*Math.sin(d)*Math.cos(brng));
+  const lon2=lon1+Math.atan2(Math.sin(brng)*Math.sin(d)*Math.cos(lat1),Math.cos(d)-Math.sin(lat1)*Math.sin(lat2));
+  return {lat:lat2*180/Math.PI,lon:lon2*180/Math.PI};
+}
+
+function beep(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC) return;
+    const ac=new AC();
+    const start=ac.currentTime;
+    const end=start+4.8;
+    const master=ac.createGain();
+    master.gain.setValueAtTime(0.0001,start);
+    master.gain.linearRampToValueAtTime(0.32,start+0.05);
+    master.gain.setValueAtTime(0.32,end-0.12);
+    master.gain.linearRampToValueAtTime(0.0001,end);
+    master.connect(ac.destination);
+
+    for(let t=0;t<4.8;t+=0.48){
+      const o=ac.createOscillator();
+      const g=ac.createGain();
+      o.type="square";
+      o.frequency.setValueAtTime(880,start+t);
+      o.frequency.setValueAtTime(660,start+t+0.18);
+      g.gain.setValueAtTime(0.0001,start+t);
+      g.gain.linearRampToValueAtTime(0.8,start+t+0.03);
+      g.gain.setValueAtTime(0.8,start+t+0.27);
+      g.gain.linearRampToValueAtTime(0.0001,start+t+0.36);
+      o.connect(g);
+      g.connect(master);
+      o.start(start+t);
+      o.stop(start+t+0.38);
+    }
+    setTimeout(()=>{try{ac.close();}catch(e){}},5200);
+  }catch(e){}
+}
+function saveLocal(){
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(state));}catch(e){}
+}
+
+function loadLocal(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(!raw) return;
+    const data=JSON.parse(raw);
+    if(data && typeof data==="object"){
+      state={...state,...data};
+      if(!Array.isArray(state.savedCaptures)) state.savedCaptures=[];
+    }
+  }catch(e){}
+}
+
+function syncFieldsFromState(){
+  $("rallyTitle").value=state.rallyTitle||"";
+  $("routeName").value=state.routeName||"";
+  $("rallyDay").value=state.rallyDay||"Day 1";
+  $("projectNotes").value=state.projectNotes||"";
+}
+
+function autoSaveDraft(){
+  state.rallyTitle=$("rallyTitle").value;
+  state.routeName=$("routeName").value;
+  state.rallyDay=$("rallyDay").value;
+  state.projectNotes=$("projectNotes").value;
+  state.draft={
+    type:$("locType").value,
+    number:$("locNumber").value,
+    name:$("locName").value,
+    notes:$("locNotes").value,
+    capturedPoint,
+    lineStartPoint,
+    lineEndPoint,
+    updatedAt:new Date().toISOString()
+  };
+  saveLocal();
+}
+
+function sanitizeFilePart(v){
+  return String(v||"").trim().replace(/[^A-Za-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
+}
+
+function downloadTextFile(filename,text,mime){
+  const blob=new Blob([text],{type:mime||"text/plain"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},250);
+}
+
+function escapeHtml(s){
+  return String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+}
+
+init();
+</script>
+</body>
+</html>
